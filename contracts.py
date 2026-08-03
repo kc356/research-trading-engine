@@ -151,7 +151,37 @@ class Strategy(ABC, Generic[C]):
         self.clock: Clock | None = None
         self.cache: Cache | None = None
 
+    # writing (called by engine, not by user code)
+
+    def _handle_bar(self, topic: str, event: Event) -> None:
+        assert isinstance(event, BarEvent)
+        if event.bar_spec == self.config.bar_spec:
+            self.on_bar(event)
+
+    def _handle_timer(self, topic: str, event: Event) -> None:
+        assert isinstance(event, TimeEvent)
+        self.on_timer(event)
+
     def register(self, bus: MessageBus, clock: Clock, cache: Cache) -> None:
         self._bus, self.clock, self.cache = bus, clock, cache
         for sym in self.config.symbols:
             bus.subscribe(f"data.bar.*.{sym}", self._handle_bar)
+
+    def emit_signal(self, symbol: str, score: float, **meta) -> None:
+        assert self._bus is not None and self.clock is not None
+        score = max(-1.0, min(1.0, score))
+        now = self.clock.now_ns()
+        self._bus.publish(
+            f"signal.{self.id}",
+            SignalEvent(
+                ts_event=now, ts_init=now,
+                strategy_id=self.id, symbol=symbol,
+                score=score, meta=meta,
+            )
+        )
+
+    def on_bar(self, event: Event):
+        ...
+
+    def on_timer(self, event: TimeEvent):
+        ...
