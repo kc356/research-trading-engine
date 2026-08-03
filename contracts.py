@@ -185,3 +185,17 @@ class Strategy(ABC, Generic[C]):
 
     def on_timer(self, event: TimeEvent):
         ...
+
+STRATEGY_REGISTRY: dict[str, tuple[type[Strategy], type[StrategyConfig]]] = {}
+
+def register_strategy(name: str, config_cls: type[StrategyConfig]):
+    def deco(cls: type[Strategy]):
+        STRATEGY_REGISTRY[name] = (cls, config_cls)
+        return cls
+    return deco
+
+def build_strategy(spec: dict) -> Strategy:
+    cls, config_cls = STRATEGY_REGISTRY[spec["type"]]
+    cfg = config_cls(id=spec["id"], **spec.get("params", {}),
+                     symbols=spec["symbols"], bar_spec=spec.get("bar_spec", "1h")) # why hard code 1h ??
+    return cls(cfg)
