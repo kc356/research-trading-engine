@@ -180,7 +180,7 @@ class Strategy(ABC, Generic[C]):
             )
         )
 
-    def on_bar(self, event: Event):
+    def on_bar(self, bar: BarEvent):
         ...
 
     def on_timer(self, event: TimeEvent):

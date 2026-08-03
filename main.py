@@ -10,6 +10,8 @@ class MomentumConfig(StrategyConfig):
 @register_strategy("momentum", MomentumConfig)
 class MomentumStrategy(Strategy[MomentumConfig]):
     def on_bar(self, bar: BarEvent) -> None:
+        if not self.cache:
+            return
         bars = self.cache.bars(bar.symbol, self.config.lookback)
         if len(bars) < self.config.lookback:
             return # not enough history yet
