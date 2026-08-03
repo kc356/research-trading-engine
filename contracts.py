@@ -59,7 +59,7 @@ class TargetWeights(Event):
 @dataclass(frozen=True, slots=True)
 class PositionSnapshot(Event):
     positions: dict[str, float]
-    nav: float
+    net_asset_value: float
     cash: float
 
 class OrderType(str, Enum):
@@ -133,7 +133,7 @@ class Cache(Protocol):
     def position(self, symbol: str) -> float:
         ...
 
-    def nav(self) -> float:
+    def net_asset_value(self) -> float:
         ...
 
 class StrategyConfig(BaseModel):
