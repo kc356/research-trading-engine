@@ -1,7 +1,6 @@
 import math
 from collections import defaultdict, deque
 
-from pexpect.pxssh import pxssh
 from pydantic import BaseModel
 
 from contracts import BarEvent, OrderFilled, OrderSide, MessageBus, Event, SignalEvent, TargetWeights, SubmitOrder, \
