@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import requests
-from requests import Response
+import polars as pl
 
 GAMMA = "https://gamma-api.polymarket.com"
 CLOB = "https://clob.polymarket.com"
@@ -89,5 +89,14 @@ class GammaClient:
             outcome=outcome,
         )
 
+MARKETS_SCHEMA = {
+    "window_start_ns": pl.Int64, "window_end_ns": pl.Int64,
+    "slug": pl.Utf8, "condition_id": pl.Utf8,
+    "token_up": pl.Utf8, "token_down": pl.Utf8,
+    "closed": pl.Boolean, "outcome": pl.Utf8,
+}
 
-
+PRICES_SCHEMA = {
+    "window_start_ns": pl.Int64, "outcome_token": pl.Utf8,
+    "ts_ns": pl.Int64, "price": pl.Float64,
+}
