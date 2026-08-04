@@ -18,6 +18,8 @@ class MeanRevConfig(StrategyConfig):
 @register_strategy("mean_reversion", MeanRevConfig)
 class MeanRevStrategy(Strategy[MeanRevConfig]):
     def on_bar(self, bar: BarEvent) -> None:
+        if not self.cache:
+            return
         bars = self.cache.bars(bar.symbol, self.config.window)
         if len(bars) < self.config.window:
             return
