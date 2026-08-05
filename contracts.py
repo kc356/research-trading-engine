@@ -189,10 +189,10 @@ class Strategy(ABC, Generic[C]):
 
     def register(self, bus: MessageBus, clock: Clock, cache: Cache) -> None:
         self._bus, self.clock, self.cache = bus, clock, cache
-        for sym in self.config.symbols:
-            bus.subscribe(f"data.bar.*.{sym}", self._handle_bar)
-            bus.subscribe(f"instrument.defined.{sym}", self._handle_defined)
-            bus.subscribe(f"market.resolved.{sym}", self._handle_resolved)
+        for symbol in self.config.symbols:
+            bus.subscribe(f"data.bar.*.{symbol}*", self._handle_bar)
+            bus.subscribe(f"instrument.defined.{symbol}", self._handle_defined)
+            bus.subscribe(f"market.resolved.{symbol}", self._handle_resolved)
         bus.subscribe(f"system.timer.{self.id}.*", self._handle_timer)
         self.on_start()
 
