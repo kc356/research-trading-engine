@@ -186,6 +186,7 @@ def sync(catalog: Catalog, gamma: GammaClient, clob: ClobClient,
         if w in catalog.done:
             report.skipped += 1
             continue
+        print(f"=== fetch market {w} meta data ===")
         meta = gamma.market_for_window(w)
         if meta is None:
             report.missing.append(w)
@@ -195,6 +196,7 @@ def sync(catalog: Catalog, gamma: GammaClient, clob: ClobClient,
             continue
         rows: list[tuple[str, int, float]] = []
         for name, token in (("Up", meta.token_up), ("Down", meta.token_down)):
+            print(f"=== fetch market {w} {name} price history data  ===")
             for pt in clob.prices_history(token, meta.window_start, meta.window_end):
                 rows.append((name, int(pt["t"]), float(pt["p"])))
         catalog.write_window(meta, rows)
