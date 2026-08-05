@@ -9,10 +9,9 @@ Sharpe, suspect a bug before suspecting genius.
 """
 import argparse
 
-from imageio.config.plugins import summary
 from pydantic import Field
 
-from catalog.polymarket_engine import load_catalog_events, PolymarketBacktestEngine, PolymarketBacktestConfig
+from polymarket_engine import load_catalog_events, PolymarketBacktestEngine, PolymarketBacktestConfig
 from contracts import StrategyConfig, register_strategy, Strategy, InstrumentDefined, MarketResolved, BarEvent, \
     build_strategy
 from polymarket_data import NS
@@ -52,7 +51,7 @@ class LateMomentum(Strategy[LateMomoConfig]):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--catalog", result="./catalog/polymarket_btc5m")
+    ap.add_argument("--catalog", default="./catalog/polymarket_btc5m")
     args = ap.parse_args()
 
     events = load_catalog_events(args.catalog)
