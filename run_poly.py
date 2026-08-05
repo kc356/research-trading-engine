@@ -1,4 +1,4 @@
-"""run_poly.py — First real backtest on the Polymarket BTC5M catalog.
+"""run_poly.py — First real backtest on the Polymarket BTC5m catalog.
 
 Usage:  python run_poly.py --catalog ./catalog/polymarket_btc5m
 
@@ -59,7 +59,7 @@ def main() -> None:
     print(f"loaded {len(events)} events across {n_instrument} windows")
 
     strategies = [build_strategy({
-        "type": "late_momentum", "id": "latemomo", "symbols": ["BTC5M"],
+        "type": "late_momentum", "id": "latemomo", "symbols": ["BTC5m"],
         "bar_spec": "1m",
         "params": {"min_elapsed_s": 180, "band": 0.15},
     })]

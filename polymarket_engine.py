@@ -13,6 +13,8 @@ from engine import Ledger, MarketCache, MetricsEngine, RiskConfig, RiskEngine, S
 
 import polars as pl
 
+from polymarket_data import MARKETS_SCHEMA, PRICES_SCHEMA
+
 NS = 1_000_000_000
 
 
@@ -189,8 +191,8 @@ def load_catalog_events(catalog_root: str | Path, series: str = "BTC5m",
     """
 
     root = Path(catalog_root)
-    market = pl.read_parquet(root / "markets" / "date=*" / "part.parquet")
-    price = pl.read_parquet(root / "prices" / "date=*" / "part.parquet")
+    market = pl.read_parquet(root / "markets" / "data=*" / "part.parquet", schema=MARKETS_SCHEMA)
+    price = pl.read_parquet(root / "prices" / "data=*" / "part.parquet", schema=PRICES_SCHEMA)
     market = market.filter(pl.col("closed") & pl.col("outcome").is_not_null())
 
     events: list[tuple[int, int, str, Event]] = []
