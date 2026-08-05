@@ -2,6 +2,7 @@ import json
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 import polars as pl
@@ -90,13 +91,64 @@ class GammaClient:
         )
 
 MARKETS_SCHEMA = {
-    "window_start_ns": pl.Int64, "window_end_ns": pl.Int64,
-    "slug": pl.Utf8, "condition_id": pl.Utf8,
-    "token_up": pl.Utf8, "token_down": pl.Utf8,
-    "closed": pl.Boolean, "outcome": pl.Utf8,
+    "window_start_ns": pl.Int64,
+    "window_end_ns": pl.Int64,
+    "slug": pl.Utf8,
+    "condition_id": pl.Utf8,
+    "token_up": pl.Utf8,
+    "token_down": pl.Utf8,
+    "closed": pl.Boolean,
+    "outcome": pl.Utf8,
 }
 
 PRICES_SCHEMA = {
-    "window_start_ns": pl.Int64, "outcome_token": pl.Utf8,
-    "ts_ns": pl.Int64, "price": pl.Float64,
+    "window_start_ns": pl.Int64,
+    "outcome_token": pl.Utf8,
+    "ts_ns": pl.Int64,
+    "price": pl.Float64,
 }
+
+class Catalog:
+    def __init__(self, root: str | Path) -> None:
+        self.root = Path(root)
+        self.manifest_path = self.root / "manifest.json"
+        self.done: set[int] = set()
+        if self.manifest_path.exists():
+            self.done = set(json.loads(self.manifest_path.read_text())["windows"])
+
+    def write_window(self, meta: MarketMeta,
+                     price_rows: list[tuple[str, int, float]]) -> None:
+        date = utc_date(meta.window_start)
+        self._append("markets", date, pl.DataFrame([{
+            "window_start_ns": meta.window_start * NS,
+            "window_end_ns": meta.window_end * NS,
+            "slug": meta.slug,
+            "condition_id": meta.condition_id,
+            "token_up": meta.token_up,
+            "token_down": meta.token_down,
+            "closed": meta.closed,
+            "outcome": meta.outcome,
+        }], schema=MARKETS_SCHEMA))
+        if price_rows:
+            self._append("prices", date, pl.DataFrame([{
+                "window_start_ns": meta.window_start * NS,
+                "outcome_token": o,
+                "ts_ns": t * NS,
+                "price": p
+            } for o, t, p in price_rows ],schema=PRICES_SCHEMA))
+        self.done.add(meta.window_start)
+
+    def _append(self, dataset: str, date: str, df:pl.DataFrame) -> None:
+        d = self.root / dataset / f"data={date}"
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / "part.parquet"
+        if f.exists():
+            df = pl.concat([pl.read_parquet(f), df]).unique(keep="last")
+        df.write_parquet(f)
+
+    def flush_manifest(self) -> None:
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.manifest_path.write_text(
+            json.dumps({"windows": sorted(self.done)})
+        )
+
