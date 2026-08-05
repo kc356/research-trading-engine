@@ -111,6 +111,12 @@ class MarketResolved(Event):
     outcome: str
     settlement: dict = field(default_factory=dict) # outcome -> settle price
 
+@dataclass(frozen=True, slots=True)
+class DataEvent(Event):
+    source: str
+    scope: str
+    payload: dict = field(default_factory=dict)
+
 
 Handler = Callable[[str, Event], None]
 
@@ -157,6 +163,7 @@ class StrategyConfig(BaseModel):
     id: str
     symbols: list[str]
     bar_spec: str = "1h"
+    data_topics: list[str] = []
 
 C = TypeVar("C", bound=StrategyConfig)
 
@@ -187,6 +194,10 @@ class Strategy(ABC, Generic[C]):
         assert isinstance(event, MarketResolved)
         self.on_resolution(event)
 
+    def _handle_data(self, topic: str, event: Event) -> None:
+        assert isinstance(event, DataEvent)
+        self.on_data(event)
+
     def register(self, bus: MessageBus, clock: Clock, cache: Cache) -> None:
         self._bus, self.clock, self.cache = bus, clock, cache
         for symbol in self.config.symbols:
@@ -194,6 +205,8 @@ class Strategy(ABC, Generic[C]):
             bus.subscribe(f"instrument.defined.{symbol}", self._handle_defined)
             bus.subscribe(f"market.resolved.{symbol}", self._handle_resolved)
         bus.subscribe(f"system.timer.{self.id}.*", self._handle_timer)
+        for topic in self.config.data_topics:
+            bus.subscribe(topic, self._handle_data)
         self.on_start()
 
     def emit_signal(self, symbol: str, score: float, **meta) -> None:
@@ -216,6 +229,7 @@ class Strategy(ABC, Generic[C]):
     def on_instrument(self, event: InstrumentDefined) -> None: ...
     def on_resolution(self, event: MarketResolved) -> None: ...
     def on_stop(self) -> None: ...
+    def on_data(self, event: DataEvent) -> None: ...
 
 
 STRATEGY_REGISTRY: dict[str, tuple[type[Strategy], type[StrategyConfig]]] = {}
