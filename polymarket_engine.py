@@ -7,12 +7,13 @@ from pydantic import BaseModel
 from contracts import (
     BarEvent, Event, InMemoryBus, InstrumentDefined, MarketResolved,
     MessageBus, OrderFilled, OrderSide, OrderType, SignalEvent, Strategy,
-    SubmitOrder, TargetWeights, TimeEvent,
+    SubmitOrder, TargetWeights, TimeEvent, DataEvent,
 )
 from engine import Ledger, MarketCache, MetricsEngine, RiskConfig, RiskEngine, SimClock
 
 import polars as pl
 
+from features import FeatureEngine
 from polymarket_data import MARKETS_SCHEMA, PRICES_SCHEMA
 
 NS = 1_000_000_000
@@ -227,6 +228,40 @@ def load_catalog_events(catalog_root: str | Path, series: str = "BTC5m",
     events.sort(key=lambda x: (x[0], x[1], x[2]))
     return events
 
+def load_alt_events(catalog_root: str | Path, source: str, default_known_lag_ns: int = 5 * NS) -> list[tuple[int, int, str, Event]]:
+    """Load an alt dataset from {catalog}/alt/{source}/date=*/part.parquet.
+
+        Required columns: ts_event_ns, scope, payload (JSON string).
+        Optional column:  ts_known_ns — when the system could first see it.
+        If absent (backfilled history with unknown arrival times), replay time
+        is ts_event + default_known_lag_ns. Never replay alt data at ts_event
+        itself: that assumes zero indexing/network latency.
+        Priority 3: alt data lands after bars within the same timestamp.
+        """
+    import json as _json
+    root = Path(catalog_root)
+    files = sorted((root / "alt" / source).glob("date=*/part.parquet"))
+    if not files:
+        return []
+    df = pl.concat([pl.read_parquet(f) for f in files])
+    has_known = "ts_known_ns" in df.columns
+    events: list[tuple[int, int, str, Event]] = []
+    for r in df.iter_rows(named=True):
+        ts_known = (r["ts_event_ns"] if has_known and r["ts_known_ns"]
+                    else r["ts_event_ns"] + default_known_lag_ns)
+        events.append((ts_known, 3, f"data.alt.{source}.{r['scope']}", DataEvent(
+            ts_event=r["ts_event_ns"], ts_init=ts_known, source=source, scope=r["scope"],
+            payload=_json.loads(r["payload"])
+        )))
+    events.sort(key=lambda x: (x[0], x[1], x[2]))
+    return events
+
+def merge_events(*streams: list[tuple[int, int, str, Event]]) -> list[tuple[int, int, str, Event]]:
+    merged = [e for s in streams for e in s]
+    merged.sort(key=lambda x: (x[0], x[1], x[2]))
+    return merged
+
+
 class PolymarketBacktestConfig(BaseModel):
     initial_cash: float = 100_000.0
     allocator: SeriesAllocatorConfig = SeriesAllocatorConfig()
@@ -235,7 +270,7 @@ class PolymarketBacktestConfig(BaseModel):
     periods_per_year: float = 365 * 24 * 60
 
 class PolymarketBacktestEngine:
-    def __init__(self, cfg: PolymarketBacktestConfig, strategies: list[Strategy]) -> None:
+    def __init__(self, cfg: PolymarketBacktestConfig, strategies: list[Strategy], feature_engines: list[FeatureEngine] | None = None) -> None:
         self.cfg = cfg
         self.bus = InMemoryBus()
         self.clock = SimClock()
@@ -248,6 +283,8 @@ class PolymarketBacktestEngine:
 
         # Writing order is the contract, do not reorder.
         self.execution.register(self.bus)
+        for fe in (feature_engines or []):
+            fe.register(self.bus, self.clock)
         for s in strategies:
             s.register(self.bus, self.clock, self.cache)
         self.allocator.register(self.bus)
