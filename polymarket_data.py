@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", default="./catalog/polymarket_btc5m")
-    ap.add_argument("--hours", type=float, defatul=24.0,
+    ap.add_argument("--hours", type=float, default=24.0,
                     help="backfill this many hours ending now")
     args = ap.parse_args()
 
