@@ -4,10 +4,10 @@ import random
 
 from pydantic import Field
 
-from contracts import (
+from core.contracts import (
     BarEvent, StrategyConfig, Strategy, build_strategy, register_strategy,
 )
-from engine import BacktestConfig, BacktestEngine
+from core.engine import BacktestConfig, BacktestEngine
 
 
 class MeanRevConfig(StrategyConfig):

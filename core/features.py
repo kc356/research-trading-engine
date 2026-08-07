@@ -18,7 +18,7 @@ lookahead wearing a costume.
 """
 from abc import ABC, abstractmethod
 
-from contracts import MessageBus, Clock, DataEvent, Event, MarketResolved
+from .contracts import MessageBus, Clock, DataEvent, Event, MarketResolved
 
 
 class FeatureEngine(ABC):

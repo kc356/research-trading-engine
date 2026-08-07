@@ -4,17 +4,17 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from contracts import (
+from core.contracts import (
     BarEvent, Event, InMemoryBus, InstrumentDefined, MarketResolved,
     MessageBus, OrderFilled, OrderSide, OrderType, SignalEvent, Strategy,
     SubmitOrder, TargetWeights, TimeEvent, DataEvent,
 )
-from engine import Ledger, MarketCache, MetricsEngine, RiskConfig, RiskEngine, SimClock
+from core.engine import Ledger, MarketCache, MetricsEngine, RiskConfig, RiskEngine, SimClock
 
 import polars as pl
 
-from features import FeatureEngine
-from polymarket_data import MARKETS_SCHEMA, PRICES_SCHEMA
+from core.features import FeatureEngine
+from .polymarket_data import MARKETS_SCHEMA, PRICES_SCHEMA
 
 NS = 1_000_000_000
 

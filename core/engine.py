@@ -3,7 +3,7 @@ from collections import defaultdict, deque
 
 from pydantic import BaseModel
 
-from contracts import BarEvent, OrderFilled, OrderSide, MessageBus, Event, SignalEvent, TargetWeights, SubmitOrder, \
+from .contracts import BarEvent, OrderFilled, OrderSide, MessageBus, Event, SignalEvent, TargetWeights, SubmitOrder, \
     OrderType, Strategy, InMemoryBus, TimeEvent
 
 

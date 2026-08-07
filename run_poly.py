@@ -11,10 +11,10 @@ import argparse
 
 from pydantic import Field
 
-from polymarket_engine import load_catalog_events, PolymarketBacktestEngine, PolymarketBacktestConfig
-from contracts import StrategyConfig, register_strategy, Strategy, InstrumentDefined, MarketResolved, BarEvent, \
+from exchanges.polymarket.polymarket_engine import load_catalog_events, PolymarketBacktestEngine, PolymarketBacktestConfig
+from core.contracts import StrategyConfig, register_strategy, Strategy, InstrumentDefined, MarketResolved, BarEvent, \
     build_strategy
-from polymarket_data import NS
+from exchanges.polymarket.polymarket_data import NS
 
 
 class LateMomoConfig(StrategyConfig):
